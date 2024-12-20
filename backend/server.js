@@ -6,6 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import postRoutes from "./routes/post.routes.js";
+import notificationsRoutes from "./routes/notification.routes.js";
 import { protectRoute } from "./middleware/protectRoute.js";
 
 import connectMongoDB from "./db/connectMongoDB.js";
@@ -28,6 +29,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", protectRoute, userRoutes);
 app.use("/api/posts", protectRoute, postRoutes);
+app.use("/api/notifications", protectRoute, notificationsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}...`);
