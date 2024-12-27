@@ -5,8 +5,37 @@ import { BiLogOut } from "react-icons/bi";
 import { Link } from "react-router-dom";
 
 import XSvg from "../svgs/X";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const Sidebar = () => {
+  const queryClient = useQueryClient();
+
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
+  const { mutate: logout, error } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/auth/logout", {
+          method: "POST",
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        return data;
+      } catch (error) {
+        console.error(error.message);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: () => {
+      toast.error(error.message);
+    },
+  });
+
   return (
     <div className="md:flex-[2_2_0] w-18 max-w-52">
       <div className="sticky top-0 left-0 h-screen flex flex-col border-r border-gray-700">
@@ -35,7 +64,7 @@ const Sidebar = () => {
           <li className="flex justify-center md:justify-start">
             <Link
               className="flex gap-3 items-center hover:bg-stone-900 transition duration-300 cursor-pointer rounded-full py-2 px-4"
-              to="/profile"
+              to={`/profile/${authUser.username}`}
             >
               <FaUser className="w-8 h-8" />
               <span className="text-lg hidden md:block">Profile</span>
@@ -45,15 +74,21 @@ const Sidebar = () => {
         <Link className="mt-auto mb-10 flex gap-2 items-start hover:bg-stone-900 transition duration-300 cursor-pointer rounded-full py-2 px-4">
           <div className="avatar hidden md:inline-flex">
             <div className="w-8 h-8 rounded-full">
-              <img src="/avatars/boy1.png" />
+              <img src={authUser.profileImg || "/avatar-placeholder.png"} />
             </div>
           </div>
           <div className="flex justify-between flex-1">
             <div className="hidden md:block">
-              <p className="text-white font-bold">John Doe</p>
-              <p className="text-slate-500 text-sm">@johndoe</p>
+              <p className="text-white font-bold">{authUser.fullName}</p>
+              <p className="text-slate-500 text-sm">@{authUser.username}</p>
             </div>
-            <BiLogOut className="w-8 h-8 cursor-pointer hover:text-red-500 md:w-5 md:h-5" />
+            <BiLogOut
+              className="w-8 h-8 cursor-pointer hover:text-red-500 md:w-5 md:h-5"
+              onClick={(e) => {
+                e.preventDefault();
+                logout();
+              }}
+            />
           </div>
         </Link>
       </div>

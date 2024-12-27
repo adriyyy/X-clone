@@ -1,13 +1,47 @@
-import { MdOutlineMail, MdPassword } from "react-icons/md";
+import { MdPassword } from "react-icons/md";
+import { FaUser } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 import XSvg from "../../../components/svgs/X.jsx";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
+  });
+
+  const queryClient = useQueryClient();
+
+  const {
+    mutate: loginMutation,
+    isPending,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async ({ username, password }) => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        console.error(error.message);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("User logged in successfully!");
+      queryClient.invalidateQueries("authUser");
+    },
   });
 
   const handleInputChange = (e) => {
@@ -16,11 +50,8 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(e);
-    console.log(formData);
+    loginMutation(formData);
   };
-
-  const isError = false;
 
   return (
     <div
@@ -35,13 +66,13 @@ const LoginPage = () => {
           <XSvg className="w-24 fill-white lg:hidden" />
           <h1 className="text-4xl font-extrabold">{"Let's"} go.</h1>
           <label className="input input-bordered rounded flex gap-2 items-center">
-            <MdOutlineMail />
+            <FaUser />
             <input
               className="grow"
-              type="email"
-              placeholder="Email"
-              name="email"
-              value={formData.email}
+              type="text"
+              placeholder="Username"
+              name="username"
+              value={formData.username}
               onChange={handleInputChange}
             />
           </label>
@@ -57,9 +88,9 @@ const LoginPage = () => {
             />
           </label>
           <button className="btn btn-primary rounded-full text-white">
-            Login
+            {isPending ? "Loading..." : "Login"}
           </button>
-          {isError && <p className="text-red-500">Something went wrong</p>}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col gap-2 mt-4">
           <p>{"Don't"} have an account?</p>

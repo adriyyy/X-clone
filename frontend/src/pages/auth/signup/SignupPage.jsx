@@ -8,6 +8,8 @@ import { FaUser } from "react-icons/fa";
 import XSvg from "../../../components/svgs/X.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +19,32 @@ const SignupPage = () => {
     password: "",
   });
 
-  const isError = false;
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending, isError, error } = useMutation({
+    mutationFn: async ({ email, username, fullName, password }) => {
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username, fullName, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        console.error(error.message);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("User created successfully!");
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+  });
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,7 +52,7 @@ const SignupPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+    mutate(formData);
   };
 
   return (
@@ -87,9 +114,9 @@ const SignupPage = () => {
             />
           </label>
           <button className="btn grow btn-primary rounded-full text-white">
-            Sign up
+            {isPending ? "Loading..." : "Sign up"}
           </button>
-          {isError && <p className="text-red-500">Something went wrong</p>}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col lg:w-2/3 gap-2 mt-4">
           <p className="text-white text-xl">Already have an account?</p>
