@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton.jsx";
+import useFollow from "../../hooks/useFollow.jsx";
 
 const RightPanel = () => {
   const { data: suggestedUsers, isLoading } = useQuery({
@@ -17,6 +18,8 @@ const RightPanel = () => {
       }
     },
   });
+
+  const { follow, isPending } = useFollow();
 
   if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
@@ -35,28 +38,40 @@ const RightPanel = () => {
           )}
           {!isLoading &&
             suggestedUsers?.map((user) => (
-              <Link
+              <div
                 className="flex justify-between items-center gap-4"
-                to={`/profile/${user.username}`}
                 key={user._id}
               >
-                <div className="flex gap-2 items-center">
+                <Link
+                  to={`/profile/${user.username}`}
+                  className="flex gap-2 items-center"
+                >
                   <div className="avatar rounded-full overflow-hidden w-8">
-                    <img src={user.profileImg || "/avatar-placeholder.png"} />
+                    <img src={user.profileImg || "/avatar-placeholder.png"} />t{" "}
                   </div>
                   <div className="flex flex-col">
-                    <p className="font-semibold tracking-tight truncate">
+                    <p className="font-semibold tracking-tight runcate">
                       {user.fullName}
                     </p>
                     <p className="text-sm text-slate-500">@{user.username}</p>
                   </div>
-                </div>
+                </Link>
                 <div>
-                  <button className="btn bg-white rounded-full text-black hover:bg-gray-200 transition duration-300 btn-sm">
-                    Follow
+                  <button
+                    className="btn bg-white rounded-full text-black hover:bg-gray-200 transition duration-300 btn-sm"
+                    onClick={() => {
+                      follow(user._id);
+                      console.log(user._id);
+                    }}
+                  >
+                    {isPending ? (
+                      <div className="loading loading-spinner loading-sm"></div>
+                    ) : (
+                      "Follow"
+                    )}
                   </button>
                 </div>
-              </Link>
+              </div>
             ))}
         </div>
       </div>
