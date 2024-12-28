@@ -2,17 +2,43 @@ import { Link } from "react-router-dom";
 import { FaRegComment, FaRegHeart, FaTrash, FaBookmark } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
 
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const queryClient = useQueryClient();
+
   const postOwner = post.user;
+  const isMyPost = authUser._id === postOwner._id;
   const formatedDate = "1h";
   const isLiked = false;
-  const isMyPost = true;
   const isCommenting = false;
 
-  const handleDeletePost = () => {};
+  const { mutate: deletePost, isPending: isDeleting } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/${post._id}`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Post deleted succesfully");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+
+  const handleDeletePost = () => {
+    deletePost();
+  };
 
   const handlePostComment = (e) => {
     e.preventDefault();
@@ -42,10 +68,15 @@ const Post = ({ post }) => {
           </span>
           {isMyPost && (
             <span className="flex-1 flex justify-end">
-              <FaTrash
-                className="cursor-pointer hover:text-red-500"
-                onClick={handleDeletePost}
-              />
+              {!isDeleting && (
+                <FaTrash
+                  className="cursor-pointer hover:text-red-500"
+                  onClick={handleDeletePost}
+                />
+              )}
+              {isDeleting && (
+                <div className="loading loading-spinner loading-sm"></div>
+              )}
             </span>
           )}
         </div>
