@@ -14,7 +14,7 @@ const Post = ({ post }) => {
   const postOwner = post.user;
   const isMyPost = authUser._id === postOwner._id;
   const formatedDate = "1h";
-  const isLiked = false;
+  const isLiked = post.likes.includes(authUser._id);
   const isCommenting = false;
 
   const { mutate: deletePost, isPending: isDeleting } = useMutation({
@@ -36,6 +36,32 @@ const Post = ({ post }) => {
     },
   });
 
+  const { mutate: likePost, isPending: isLiking } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: (updatedLikes) => {
+      // queryClient.invalidateQueries({ queryKey: ["posts"] }) - not great 😐
+      queryClient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, likes: updatedLikes };
+          }
+          return p;
+        });
+      });
+    },
+  });
+
   const handleDeletePost = () => {
     deletePost();
   };
@@ -45,7 +71,10 @@ const Post = ({ post }) => {
     console.log(comment);
   };
 
-  const handleLikePost = () => {};
+  const handleLikePost = () => {
+    if (isLiking) return;
+    likePost();
+  };
 
   return (
     <div className="flex items-start gap-2 border-b border-gray-700 p-4">
@@ -168,11 +197,16 @@ const Post = ({ post }) => {
               className="flex gap-1 items-center group cursor-pointer"
               onClick={handleLikePost}
             >
-              <FaRegHeart
-                className={`w-4 h-4 ${
-                  isLiked ? "text-pink-500" : "text-slate-500"
-                } group-hover:text-pink-500`}
-              />
+              {!isLiking && (
+                <FaRegHeart
+                  className={`w-4 h-4 ${
+                    isLiked ? "text-pink-500" : "text-slate-500"
+                  } group-hover:text-pink-500`}
+                />
+              )}
+              {isLiking && (
+                <div className="loading loading-spinner loading-sm text-pink-500"></div>
+              )}
               <span
                 className={`text-sm ${
                   isLiked ? "text-pink-500" : "text-slate-500"
