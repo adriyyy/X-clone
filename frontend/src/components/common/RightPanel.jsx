@@ -1,9 +1,24 @@
 import { Link } from "react-router-dom";
-import { USERS_FOR_RIGHT_PANEL } from "../../utils/db/dummy.js";
+import { useQuery } from "@tanstack/react-query";
+
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton.jsx";
 
 const RightPanel = () => {
-  const isLoading = false;
+  const { data: suggestedUsers, isLoading } = useQuery({
+    queryKey: ["suggestedUsers"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/users/suggested");
+        const data = res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
+  if (suggestedUsers?.length === 0) return <div className="md:w-64 w-0"></div>;
 
   return (
     <div className="hidden lg:block mx-2 my-4">
@@ -19,14 +34,14 @@ const RightPanel = () => {
             </>
           )}
           {!isLoading &&
-            USERS_FOR_RIGHT_PANEL.map((user) => (
+            suggestedUsers?.map((user) => (
               <Link
                 className="flex justify-between items-center gap-4"
                 to={`/profile/${user.username}`}
                 key={user._id}
               >
                 <div className="flex gap-2 items-center">
-                  <div className="avatar rounded-full w-8">
+                  <div className="avatar rounded-full overflow-hidden w-8">
                     <img src={user.profileImg || "/avatar-placeholder.png"} />
                   </div>
                   <div className="flex flex-col">

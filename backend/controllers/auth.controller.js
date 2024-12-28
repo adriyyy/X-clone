@@ -8,6 +8,10 @@ export const signup = async (req, res) => {
   try {
     const { fullName, username, password, email } = req.body;
 
+    if (!fullName || !username || !password || !email) {
+      return res.status(400).json({ error: "Please complete all fields" });
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Invalid email format" });
@@ -17,6 +21,7 @@ export const signup = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ error: "Username is already taken" });
     }
+    const normalizedUsername = username.toLowerCase().split(" ").join("");
 
     const existingEmail = await User.findOne({ username });
     if (existingEmail) {
@@ -33,7 +38,7 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      username,
+      username: normalizedUsername,
       email,
       fullName,
       password: hashedPassword,
