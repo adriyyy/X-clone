@@ -8,7 +8,7 @@ import { FaUser } from "react-icons/fa";
 import XSvg from "../../../components/svgs/X.jsx";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 
 const SignupPage = () => {
