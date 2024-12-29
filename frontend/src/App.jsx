@@ -63,7 +63,7 @@ function App() {
       {authUser && <RightPanel />}
       <ToastContainer
         position="top-center"
-        autoClose={3000}
+        autoClose={1500}
         pauseOnHover={false}
       />
     </div>

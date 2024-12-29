@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon backend/server.js"
+    "dev": "cross-env NODE_ENV=development backend/server.js",
+    "start": "cross-env NODE_ENV=production node backend/server.js",
+    "build": "npm i && npm i --prefix frontend && npm run build --prefix frontend"
   },
   "keywords": [],
   "author": "Adriana",
