@@ -3,10 +3,13 @@ import { FaArrowLeft, FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { IoCalendarOutline } from "react-icons/io5";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton.jsx";
 import EditProfileModal from "./EditProfileModal.jsx";
-import { useQuery } from "@tanstack/react-query";
+import useFollow from "../../hooks/useFollow.jsx";
+import useUpdateProfile from "../../hooks/useUpdateProfile.jsx";
 import { formatMemberSinceDate } from "../../utils/date/index.js";
 
 const ProfilePage = () => {
@@ -18,6 +21,7 @@ const ProfilePage = () => {
   const profileImgRef = useRef(null);
 
   const { username } = useParams();
+  const { updateProfile, isUpdatingProfile } = useUpdateProfile();
 
   const {
     data: user,
@@ -38,12 +42,15 @@ const ProfilePage = () => {
     },
   });
 
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const { follow, isPending } = useFollow();
+  const memberSinceDate = formatMemberSinceDate(user?.createdAt);
+  const isMyProfile = authUser._id === user?._id;
+  const amIFollowing = authUser.following.includes(user?._id);
+
   useEffect(() => {
     refetch();
   }, [username, refetch]);
-
-  const memberSinceDate = formatMemberSinceDate(user?.createdAt);
-  const isMyProfile = true;
 
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
@@ -80,12 +87,14 @@ const ProfilePage = () => {
                 src={coverImg || user?.coverImg || "/cover.png"}
                 className="h-52 w-full overflow-hidden object-cover"
               />
-              <div
-                className="absolute top-2 right-2 rounded-full cursor-pointer bg-gray-800 bg-opacity-75 p-2 opacity-0 group-hover/cover:opacity-100 transition duration-300"
-                onClick={() => coverImgRef.current.click()}
-              >
-                <MdEdit />
-              </div>
+              {isMyProfile && (
+                <div
+                  className="absolute top-2 right-2 rounded-full cursor-pointer bg-gray-800 bg-opacity-75 p-2 opacity-0 group-hover/cover:opacity-100 transition duration-300"
+                  onClick={() => coverImgRef.current.click()}
+                >
+                  <MdEdit />
+                </div>
+              )}
             </div>
             <div className="avatar absolute -bottom-16 left-4">
               <div className="relative group/avatar w-32 rounded-full">
@@ -94,12 +103,14 @@ const ProfilePage = () => {
                     profileImg || user?.profileImg || "/avatar-placeholder.png"
                   }
                 />
-                <div
-                  className="absolute right-3 top-5 rounded-full bg-primary p-1 group-hover/avatar:opacity-100 opacity-0 transition duration-300 cursor-pointer"
-                  onClick={() => profileImgRef.current.click()}
-                >
-                  <MdEdit className="w-4 h-4 text-white" />
-                </div>
+                {isMyProfile && (
+                  <div
+                    className="absolute right-3 top-5 rounded-full bg-primary p-1 group-hover/avatar:opacity-100 opacity-0 transition duration-300 cursor-pointer"
+                    onClick={() => profileImgRef.current.click()}
+                  >
+                    <MdEdit className="w-4 h-4 text-white" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -120,18 +131,27 @@ const ProfilePage = () => {
           />
 
           <div className="flex justify-end mt-5 px-4">
-            {isMyProfile && <EditProfileModal />}
+            {isMyProfile && <EditProfileModal authUser={authUser} />}
             {!isMyProfile && (
-              <button className="btn btn-outline rounded-full px-6 btn-sm">
-                Follow
+              <button
+                className="btn btn-outline rounded-full px-6 btn-sm"
+                onClick={() => follow(user._id)}
+              >
+                {isPending && "Loading..."}
+                {!isPending && !amIFollowing && "Follow"}
+                {!isPending && amIFollowing && "Unfollow"}
               </button>
             )}
             {(coverImg || profileImg) && (
               <button
                 className="btn btn-primary btn-outline rounded-full px-6 btn-sm ml-2"
-                onClick={() => {}}
+                onClick={async () => {
+                  await updateProfile({ coverImg, profileImg });
+                  setProfileImg(null);
+                  setCoverImg(null);
+                }}
               >
-                Update
+                {!isUpdatingProfile ? "Update" : "Updating..."}
               </button>
             )}
           </div>
@@ -199,7 +219,7 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
-          <Posts feedType={feedType} username={username} userId={user._id} />
+          <Posts feedType={feedType} username={username} userId={user?._id} />
         </div>
       )}
     </div>
