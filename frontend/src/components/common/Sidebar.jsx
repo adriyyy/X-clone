@@ -71,7 +71,10 @@ const Sidebar = () => {
             </Link>
           </li>
         </ul>
-        <Link className="mt-auto mb-10 flex gap-2 items-start hover:bg-stone-900 transition duration-300 cursor-pointer rounded-full py-2 px-4">
+        <Link
+          to={`/profile/${authUser.username}`}
+          className="mt-auto mb-10 flex gap-2 items-start hover:bg-stone-900 transition duration-300 cursor-pointer rounded-full py-2 px-4"
+        >
           <div className="avatar hidden md:inline-flex">
             <div className="w-8 h-8 rounded-full">
               <img src={authUser.profileImg || "/avatar-placeholder.png"} />

@@ -1,11 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { FaArrowLeft, FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { IoCalendarOutline } from "react-icons/io5";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton.jsx";
 import EditProfileModal from "./EditProfileModal.jsx";
+import { useQuery } from "@tanstack/react-query";
+import { formatMemberSinceDate } from "../../utils/date/index.js";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState("posts");
@@ -15,20 +17,33 @@ const ProfilePage = () => {
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
-  const isMyProfile = true;
-  const isLoading = false;
+  const { username } = useParams();
 
-  const user = {
-    _id: "1",
-    fullName: "John Doe",
-    username: "johndoe",
-    profileImg: "/avatars/boy2.png",
-    coverImg: "/cover.png",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    link: "https://youtube.com/@asaprogrammer_",
-    following: ["1", "2", "3"],
-    followers: ["1", "2", "3"],
-  };
+  const {
+    data: user,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/users/profile/${username}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [username, refetch]);
+
+  const memberSinceDate = formatMemberSinceDate(user?.createdAt);
+  const isMyProfile = true;
 
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
@@ -44,11 +59,11 @@ const ProfilePage = () => {
 
   return (
     <div className="flex-1 min-h-screen border-r border-gray-700">
-      {isLoading && <ProfileHeaderSkeleton />}
-      {!isLoading && !user && (
+      {(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
+      {!isLoading && !isRefetching && !user && (
         <p className="text-center text-xl mt-4 font-semibold">User not found</p>
       )}
-      {!isLoading && user && (
+      {!isLoading && !isRefetching && user && (
         <div className="flex flex-col">
           <div className="flex gap-10 items-center p-4">
             <Link to="/">
@@ -144,7 +159,9 @@ const ProfilePage = () => {
               )}
               <div className="flex gap-2 items-center">
                 <IoCalendarOutline className="w-4 h-4 text-slate-500" />
-                <span className="text-sm text-slate-500">Joined July 2021</span>
+                <span className="text-sm text-slate-500">
+                  {memberSinceDate}
+                </span>
               </div>
             </div>
             <div className="flex gap-3 items-center">
@@ -156,9 +173,9 @@ const ProfilePage = () => {
               </div>
               <div className="flex gap-1 items-center">
                 <span className="font-bold text-xs">
-                  {user?.following?.length}
+                  {user?.followers?.length}
                 </span>
-                <span className="text-slate-500 text-xs">Following</span>
+                <span className="text-slate-500 text-xs">Followers</span>
               </div>
             </div>
           </div>
@@ -167,7 +184,7 @@ const ProfilePage = () => {
               className="flex flex-1 justify-center transition duration-300 hover:bg-secondary cursor-pointer p-3 relative"
               onClick={() => setFeedType("posts")}
             >
-              For you
+              Posts
               {feedType === "posts" && (
                 <div className="bottom-0 absolute rounded w-10 h-1 bg-primary"></div>
               )}
@@ -176,13 +193,13 @@ const ProfilePage = () => {
               className="flex flex-1 justify-center transition duration-300 hover:bg-secondary cursor-pointer p-3 relative"
               onClick={() => setFeedType("likes")}
             >
-              Following
+              Likes
               {feedType === "likes" && (
                 <div className="absolute bottom-0 rounded w-10 h-1 bg-primary"></div>
               )}
             </div>
           </div>
-          <Posts />
+          <Posts feedType={feedType} username={username} userId={user._id} />
         </div>
       )}
     </div>
