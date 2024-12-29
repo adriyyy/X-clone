@@ -46,8 +46,12 @@ const RightPanel = () => {
                   to={`/profile/${user.username}`}
                   className="flex gap-2 items-center"
                 >
-                  <div className="avatar rounded-full overflow-hidden w-8">
-                    <img src={user.profileImg || "/avatar-placeholder.png"} />t{" "}
+                  {" "}
+                  <div className="avatar w-8 h-8 rounded-full overflow-hidden">
+                    <img
+                      src={user.profileImg || "/avatar-placeholder.png"}
+                      className="w-full h-full"
+                    />
                   </div>
                   <div className="flex flex-col">
                     <p className="font-semibold tracking-tight runcate">
