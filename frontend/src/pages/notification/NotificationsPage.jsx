@@ -1,32 +1,47 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FaHeart, FaUser } from "react-icons/fa";
 import { IoSettingsOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const NotificationsPage = () => {
-  const isLoading = false;
+  const queryClient = useQueryClient();
 
-  const notifications = [
-    {
-      _id: "1",
-      from: {
-        _id: "1",
-        username: "johndoe",
-        profileImg: "/avatars/boy2.png",
-      },
-      type: "follow",
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/notifications/");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
     },
-    {
-      _id: "2",
-      from: {
-        _id: "2",
-        username: "janedoe",
-        profileImg: "/avatars/girl1.png",
-      },
-      type: "like",
-    },
-  ];
+  });
 
-  const deleteNotifications = () => {};
+  const { mutate: deleteNotifications } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/notifications", {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong");
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Notifications deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   return (
     <div className="flex-1 border-r border-gray-700 min-h-screen">
@@ -68,12 +83,12 @@ const NotificationsPage = () => {
             )}
             <div className="flex flex-col gap-1">
               <Link
-                className="avatar w-8 rounded-full"
+                className="avatar w-8 rounded-full overflow-hidden"
                 to={`/profile/${notification.from.username}`}
               >
                 <img
                   src={
-                    notification.from.profileImg || "/avater-placeholder.png"
+                    notification.from.profileImg || "/avatar-placeholder.png"
                   }
                 />
               </Link>
